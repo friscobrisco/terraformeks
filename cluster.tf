@@ -137,8 +137,8 @@ locals {
         "zeet.co/dedicated" = "system"
       }
     }
-    "ml-g58xlarge-dedi" : {
-      instance_types = ["ml.g5.8xlarge"]
+    "g5.8xlarge-dedi" : {
+      instance_types = ["g5.8xlarge"]
 
       labels = {
         "zeet.co/dedicated" = "dedicated"
