@@ -48,4 +48,4 @@ module "iam_roles" {
   cluster_name = var.cluster_name
   eks_cluster_oidc_issuer_url = module.eks.cluster_oidc_issuer_url
   route_53_hosted_zone_id = aws_route53_zone.zeet.zone_id
-}to
+}
