@@ -1,35 +1,42 @@
 terraform {
-  required_version = "~> 1.0"
+  required_version = "~> 1.1.0"
+
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "4.56.0"
+      version = "4.67.0"
     }
   }
 }
 
+provider "aws" {
+  allowed_account_ids = [var.aws_account_id]
+  region              = var.region
+}
+
 data "aws_caller_identity" "current" {}
 
+data "aws_availability_zones" "available" {}
+
 data "aws_eks_cluster" "cluster" {
-  name = module.eks.cluster_id
+  name = var.cluster_name
 }
 
 data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_id
+  name = data.aws_eks_cluster.cluster.name
 }
 
-resource "aws_route53_zone" "zeet" {
-  name    = var.cluster_domain
-  comment = "Managed by Zeet"
+resource "aws_eks_addon" "eks_addon_csi" {
+  count = var.enable_eks_csi_addon ? 1 : 0
 
-  tags = {
-    ZeetClusterId = var.zeet_cluster_id
-    ZeetUserId    = var.zeet_user_id
-  }
+  cluster_name             = data.aws_eks_cluster.cluster.name
+  service_account_role_arn = module.iam_ebs-csi.this_iam_role_arn
+  addon_name               = "aws-ebs-csi-driver"
+
+  resolve_conflicts = "OVERWRITE"
 }
 
 resource "aws_ecr_repository" "zeet" {
-  name                 = "zeet/${var.zeet_cluster_id}"
+  name                 = "zeet/${var.cluster_id}"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -37,15 +44,7 @@ resource "aws_ecr_repository" "zeet" {
   }
 
   tags = {
-    ZeetClusterId = var.zeet_cluster_id
-    ZeetUserId    = var.zeet_user_id
+    ZeetClusterId = var.cluster_id
+    ZeetUserId    = var.user_id
   }
-}
-
-module "iam_roles" {
-  source = "./iam"
-
-  cluster_name = var.cluster_name
-  eks_cluster_oidc_issuer_url = module.eks.cluster_oidc_issuer_url
-  route_53_hosted_zone_id = aws_route53_zone.zeet.zone_id
 }
